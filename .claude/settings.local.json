@@ -8,7 +8,9 @@
       "Bash(taskkill:*)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nWorking checkpoint: Product availability checking with Puppeteer\n\nFeatures working correctly:\n- Excel upload/download for products\n- Product and order management\n- Image URL support\n- Availability checking using Puppeteer headless browser\n- Detects \"out of stock\" vs \"add to cart\" text\n- Prioritizes \"out of stock\" over \"add to cart\" when both present\n- Single product and bulk availability checking\n- Beautiful loading screen during checks\n- Rupee currency display\n- Filters blank rows from Excel import\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nWorking checkpoint: Product availability checking with Puppeteer\n\nFeatures working correctly:\n- Excel upload/download for products\n- Product and order management\n- Image URL support\n- Availability checking using Puppeteer headless browser\n- Detects \"out of stock\" vs \"add to cart\" text\n- Prioritizes \"out of stock\" over \"add to cart\" when both present\n- Single product and bulk availability checking\n- Beautiful loading screen during checks\n- Rupee currency display\n- Filters blank rows from Excel import\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git config:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

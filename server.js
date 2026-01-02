@@ -181,7 +181,7 @@ app.post('/api/products/check-availability/:id', async (req, res) => {
     }
 });
 
-// Check availability for all products using Puppeteer
+// Check availability for all products using Puppeteer (parallel processing)
 app.post('/api/products/check-all-availability', async (req, res) => {
     let browser;
     try {
@@ -195,10 +195,13 @@ app.post('/api/products/check-all-availability', async (req, res) => {
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
 
-        for (let product of products) {
+        // Process products in parallel (5 at a time for reliable checking)
+        const BATCH_SIZE = 5;
+
+        async function checkProduct(product) {
             if (!product.url) {
                 product.availability = 'No URL';
-                continue;
+                return;
             }
 
             try {
@@ -215,8 +218,6 @@ app.post('/api/products/check-all-availability', async (req, res) => {
                 const lowerHtml = html.toLowerCase();
 
                 // Check availability - prioritize "out of stock" message
-                // If "out of stock" is found, it's definitely out of stock
-                // Otherwise, if "add to cart" is found, it's available
                 if (lowerHtml.includes('out of stock')) {
                     product.availability = 'Out of Stock';
                 } else if (lowerHtml.includes('add to cart')) {
@@ -227,14 +228,17 @@ app.post('/api/products/check-all-availability', async (req, res) => {
 
                 await page.close();
                 checked++;
-
-                // Small delay between requests
-                await new Promise(resolve => setTimeout(resolve, 1000));
             } catch (error) {
                 product.availability = 'Check Failed';
                 failed++;
                 console.error(`Failed to check ${product.ourcode}:`, error.message);
             }
+        }
+
+        // Process in batches
+        for (let i = 0; i < products.length; i += BATCH_SIZE) {
+            const batch = products.slice(i, i + BATCH_SIZE);
+            await Promise.all(batch.map(product => checkProduct(product)));
         }
 
         await browser.close();
