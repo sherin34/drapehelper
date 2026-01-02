@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drape - Product & Order Management</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Drape Store Management</h1>
+            <nav>
+                <button class="nav-btn active" onclick="showSection('products')">Product Details</button>
+                <button class="nav-btn" onclick="showSection('orders')">Order Details</button>
+            </nav>
+        </header>
+
+        <!-- Product Details Section -->
+        <section id="products-section" class="content-section active">
+            <div class="section-header">
+                <h2>Product Details</h2>
+                <div class="actions">
+                    <label for="product-upload" class="btn btn-primary">
+                        <input type="file" id="product-upload" accept=".xlsx,.xls" style="display: none;">
+                        Upload Excel
+                    </label>
+                    <button class="btn btn-success" onclick="checkAllAvailability()">Check All Availability</button>
+                    <button class="btn btn-success" onclick="downloadProducts()">Download Excel</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="products-table">
+                    <thead>
+                        <tr>
+                            <th>Seller Code</th>
+                            <th>Our Code</th>
+                            <th>Image</th>
+                            <th>URL</th>
+                            <th>Seller Price</th>
+                            <th>Our Price</th>
+                            <th>Profit Margin (%)</th>
+                            <th>Availability</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-tbody">
+                        <tr>
+                            <td colspan="9" class="no-data">No products loaded. Upload an Excel file to get started.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Order Details Section -->
+        <section id="orders-section" class="content-section">
+            <div class="section-header">
+                <h2>Order Details</h2>
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="showAddOrderForm()">Add New Order</button>
+                    <button class="btn btn-success" onclick="downloadOrders()">Download Excel</button>
+                </div>
+            </div>
+
+            <!-- Add Order Form -->
+            <div id="add-order-form" class="form-container" style="display: none;">
+                <h3>Add New Order</h3>
+                <form id="order-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Serial No</label>
+                            <input type="text" id="order-slno" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Order ID</label>
+                            <input type="text" id="order-orderid" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Product Code</label>
+                            <select id="order-productcode" required>
+                                <option value="">Select Product</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="order-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Price</label>
+                            <input type="number" step="0.01" id="order-price" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Profit Amount</label>
+                            <input type="number" step="0.01" id="order-profitamount">
+                        </div>
+                        <div class="form-group">
+                            <label>Buyer Name</label>
+                            <input type="text" id="order-buyername" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="order-status" required>
+                                <option value="Pending">Pending</option>
+                                <option value="Processing">Processing</option>
+                                <option value="Shipped">Shipped</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Notes</label>
+                            <textarea id="order-notes" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Order</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideAddOrderForm()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-container">
+                <table id="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Serial No</th>
+                            <th>Order ID</th>
+                            <th>Product Code</th>
+                            <th>Date</th>
+                            <th>Price</th>
+                            <th>Profit Amount</th>
+                            <th>Buyer Name</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-tbody">
+                        <tr>
+                            <td colspan="10" class="no-data">No orders yet. Add a new order to get started.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="edit-product-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditProductModal()">&times;</span>
+            <h3>Edit Product</h3>
+            <form id="edit-product-form">
+                <input type="hidden" id="edit-product-id">
+
+                <div class="form-group">
+                    <label>Seller Code</label>
+                    <input type="text" id="edit-sellercode" required>
+                </div>
+                <div class="form-group">
+                    <label>Our Code</label>
+                    <input type="text" id="edit-ourcode" required>
+                </div>
+                <div class="form-group">
+                    <label>Image URL</label>
+                    <input type="text" id="edit-imageurl" placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="form-group">
+                    <label>Product URL</label>
+                    <input type="text" id="edit-url">
+                </div>
+                <div class="form-group">
+                    <label>Seller Price</label>
+                    <input type="number" step="0.01" id="edit-sellerprice" required>
+                </div>
+                <div class="form-group">
+                    <label>Our Price</label>
+                    <input type="number" step="0.01" id="edit-ourprice" required>
+                </div>
+                <div class="form-group">
+                    <label>Profit Margin (%)</label>
+                    <input type="number" step="0.01" id="edit-profitmargin" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditProductModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Order Modal -->
+    <div id="edit-order-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditOrderModal()">&times;</span>
+            <h3>Edit Order</h3>
+            <form id="edit-order-form">
+                <input type="hidden" id="edit-order-id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Serial No</label>
+                        <input type="text" id="edit-order-slno" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Order ID</label>
+                        <input type="text" id="edit-order-orderid" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Product Code</label>
+                        <select id="edit-order-productcode" required>
+                            <option value="">Select Product</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="edit-order-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Price</label>
+                        <input type="number" step="0.01" id="edit-order-price" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Profit Amount</label>
+                        <input type="number" step="0.01" id="edit-order-profitamount">
+                    </div>
+                    <div class="form-group">
+                        <label>Buyer Name</label>
+                        <input type="text" id="edit-order-buyername" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="edit-order-status" required>
+                            <option value="Pending">Pending</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Notes</label>
+                        <textarea id="edit-order-notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditOrderModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div id="image-viewer-modal" class="modal">
+        <div class="modal-content image-viewer-content">
+            <span class="close" onclick="closeImageViewer()">&times;</span>
+            <img id="full-size-image" src="" alt="Product Image">
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3 id="loading-message">Checking availability...</h3>
+            <p id="loading-progress"></p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
