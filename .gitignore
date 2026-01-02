@@ -1,3 +1,14 @@
 node_modules/
 uploads/
 data/
+
+# Ignore JSON files
+*.json
+
+# Ignore JPG/JPEG images
+*.jpg
+*.jpeg
+
+# Ignore Excel files
+*.xls
+*.xlsx
