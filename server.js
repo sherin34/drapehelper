@@ -4,7 +4,8 @@ const XLSX = require('xlsx');
 const fs = require('fs');
 const path = require('path');
 const bodyParser = require('body-parser');
-const puppeteer = require('puppeteer');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const app = express();
 const PORT = 3000;
@@ -119,9 +120,8 @@ app.post('/api/products/upload', upload.single('file'), (req, res) => {
     }
 });
 
-// Check availability for a single product using Puppeteer
+// Check availability for a single product using Axios + Cheerio
 app.post('/api/products/check-availability/:id', async (req, res) => {
-    let browser;
     try {
         const products = readProducts();
         const id = parseInt(req.params.id);
@@ -131,26 +131,21 @@ app.post('/api/products/check-availability/:id', async (req, res) => {
             return res.status(404).json({ error: 'Product not found or no URL' });
         }
 
-        // Launch headless browser
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
-        const page = await browser.newPage();
-
-        // Navigate to product page and wait for content to load
-        await page.goto(product.url, {
-            waitUntil: 'networkidle2',
-            timeout: 30000
+        // Fetch the HTML from the product URL
+        const response = await axios.get(product.url, {
+            timeout: 30000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
         });
 
-        // Get the rendered HTML
-        const html = await page.content();
-        const lowerHtml = html.toLowerCase();
+        // Parse HTML with Cheerio
+        const $ = cheerio.load(response.data);
+        const html = $.html().toLowerCase();
 
         // Debug logging
-        const hasAddToCart = lowerHtml.includes('add to cart');
-        const hasOutOfStock = lowerHtml.includes('out of stock');
+        const hasAddToCart = html.includes('add to cart');
+        const hasOutOfStock = html.includes('out of stock');
         console.log(`Product ${product.ourcode}:`);
         console.log(`  - Has "add to cart": ${hasAddToCart}`);
         console.log(`  - Has "out of stock": ${hasOutOfStock}`);
@@ -166,8 +161,6 @@ app.post('/api/products/check-availability/:id', async (req, res) => {
             availability = 'Available';
         }
 
-        await browser.close();
-
         // Update product availability
         const index = products.findIndex(p => p.id === id);
         products[index].availability = availability;
@@ -175,25 +168,17 @@ app.post('/api/products/check-availability/:id', async (req, res) => {
 
         res.json({ success: true, availability: availability, productId: id });
     } catch (error) {
-        if (browser) await browser.close();
         console.error('Availability check error:', error.message);
         res.status(500).json({ error: 'Failed to check availability', message: error.message });
     }
 });
 
-// Check availability for all products using Puppeteer (parallel processing)
+// Check availability for all products using Axios + Cheerio (parallel processing)
 app.post('/api/products/check-all-availability', async (req, res) => {
-    let browser;
     try {
         const products = readProducts();
         let checked = 0;
         let failed = 0;
-
-        // Launch browser once for all checks
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
 
         // Process products in parallel (5 at a time for reliable checking)
         const BATCH_SIZE = 5;
@@ -205,28 +190,27 @@ app.post('/api/products/check-all-availability', async (req, res) => {
             }
 
             try {
-                const page = await browser.newPage();
-
-                // Navigate to product page
-                await page.goto(product.url, {
-                    waitUntil: 'networkidle2',
-                    timeout: 30000
+                // Fetch the HTML from the product URL
+                const response = await axios.get(product.url, {
+                    timeout: 30000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    }
                 });
 
-                // Get rendered HTML
-                const html = await page.content();
-                const lowerHtml = html.toLowerCase();
+                // Parse HTML with Cheerio
+                const $ = cheerio.load(response.data);
+                const html = $.html().toLowerCase();
 
                 // Check availability - prioritize "out of stock" message
-                if (lowerHtml.includes('out of stock')) {
+                if (html.includes('out of stock')) {
                     product.availability = 'Out of Stock';
-                } else if (lowerHtml.includes('add to cart')) {
+                } else if (html.includes('add to cart')) {
                     product.availability = 'Available';
                 } else {
                     product.availability = 'Out of Stock';
                 }
 
-                await page.close();
                 checked++;
             } catch (error) {
                 product.availability = 'Check Failed';
@@ -241,11 +225,9 @@ app.post('/api/products/check-all-availability', async (req, res) => {
             await Promise.all(batch.map(product => checkProduct(product)));
         }
 
-        await browser.close();
         writeProducts(products);
         res.json({ success: true, checked: checked, failed: failed, total: products.length });
     } catch (error) {
-        if (browser) await browser.close();
         console.error('Bulk availability check error:', error);
         res.status(500).json({ error: 'Failed to check availability' });
     }
